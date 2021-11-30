@@ -74,6 +74,56 @@ router.post('/register-admin', function(req, res) {
   });
 });
 
+router.get('/blog', function(req, res){
+  db.selectAllBlog((err, blogs) => {
+    if(err) return res.status(500).send("There was a problem getting blogs")
+
+    res.status(200).send({blogs : blogs});
+  })
+})
+
+router.post('/blog', function(req, res) {
+  let token = req.headers['x-access-token'];
+  if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
+
+  jwt.verify(token, config.secret, function(err) {
+      if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+
+      db.insertBlog(
+          [
+              req.body.blog_title,
+              req.body.blog_body,
+              req.body.created_by,
+          ],
+          function (err) {
+              if (err) return res.status(500).send("Blog could not be created.")
+
+              res.status(201).send({ message : "Blog created successfully" });
+          }
+      ); 
+  });
+});
+
+router.delete('/blog/:id', function(req, res) {
+  let token = req.headers['x-access-token'];
+  if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
+
+  jwt.verify(token, config.secret, function(err) {
+      if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+
+      db.deleteBlog(
+          req.params.id,
+          function (err) {
+              if (err) return res.status(500).send("There was a problem.")
+
+              res.status(200).send({ message : "Blog deleted successfully" });
+          }
+      ); 
+  });
+});
+
+
+
 // Login
 router.post('/login', (req, res) => {
   db.selectByEmail(req.body.email, (err, user) => {
